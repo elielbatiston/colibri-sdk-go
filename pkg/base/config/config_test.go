@@ -30,6 +30,11 @@ const (
 	sql_db_ssl_mode_value      = "disable"
 	wait_group_timeout         = 400
 	default_wait_group_timeout = 90
+	nosql_db_name_value        = "my-db-name"
+	nosql_db_hosts_value       = "localhost:27017"
+	nosql_db_user_value        = "my-db-user"
+	nosql_db_password_value    = "my-db-password"
+	nosql_db_replicaset        = "rs0"
 )
 
 func TestEnvironmentProfiles(t *testing.T) {
@@ -317,6 +322,48 @@ func TestSqlDBMigration(t *testing.T) {
 	})
 }
 
+func TestNoSqlDBMaxPoolSize(t *testing.T) {
+	loadTestEnvs(t)
+
+	t.Run("Should return default nosqldb max pool size when environment is empty", func(t *testing.T) {
+		Load()
+		assert.Equal(t, 10, NOSQL_DB_MAX_POOL_SIZE)
+	})
+
+	t.Run("Should return error when nosqldb max pool size is wrong value", func(t *testing.T) {
+		assert.NoError(t, os.Setenv(ENV_NOSQL_DB_MAX_POOL_SIZE, invalid_value))
+		assert.NotNil(t, Load())
+	})
+
+	t.Run("Should return nosqldb max pool size when environment is not empty", func(t *testing.T) {
+		assert.NoError(t, os.Setenv(ENV_NOSQL_DB_MAX_POOL_SIZE, "20"))
+
+		Load()
+		assert.Equal(t, 20, NOSQL_DB_MAX_POOL_SIZE)
+	})
+}
+
+func TestNoSqlDBMinPoolSize(t *testing.T) {
+	loadTestEnvs(t)
+
+	t.Run("Should return default sqldb min pool size when environment is empty", func(t *testing.T) {
+		Load()
+		assert.Equal(t, 3, NOSQL_DB_MIN_POOL_SIZE)
+	})
+
+	t.Run("Should return error when sqldb min pool size is wrong value", func(t *testing.T) {
+		assert.NoError(t, os.Setenv(ENV_NOSQL_DB_MIN_POOL_SIZE, invalid_value))
+		assert.NotNil(t, Load())
+	})
+
+	t.Run("Should return sqldb min pool size when environment is not empty", func(t *testing.T) {
+		assert.NoError(t, os.Setenv(ENV_NOSQL_DB_MIN_POOL_SIZE, "10"))
+
+		Load()
+		assert.Equal(t, 10, NOSQL_DB_MIN_POOL_SIZE)
+	})
+}
+
 func TestCloudDisableSsl(t *testing.T) {
 	loadTestEnvs(t)
 
@@ -354,6 +401,11 @@ func TestGeneralEnvs(t *testing.T) {
 		assert.NoError(t, os.Setenv(ENV_SQL_DB_USER, sql_db_user_value))
 		assert.NoError(t, os.Setenv(ENV_SQL_DB_PASSWORD, sql_db_password_value))
 		assert.NoError(t, os.Setenv(ENV_SQL_DB_SSL_MODE, sql_db_ssl_mode_value))
+		assert.NoError(t, os.Setenv(ENV_NOSQL_DB_NAME, nosql_db_name_value))
+		assert.NoError(t, os.Setenv(ENV_NOSQL_DB_HOSTS, nosql_db_hosts_value))
+		assert.NoError(t, os.Setenv(ENV_NOSQL_DB_USER, nosql_db_user_value))
+		assert.NoError(t, os.Setenv(ENV_NOSQL_DB_PASSWORD, nosql_db_password_value))
+		assert.NoError(t, os.Setenv(ENV_NOSQL_DB_REPLICASET, nosql_db_replicaset))
 
 		dbConnectionUri := fmt.Sprintf(SQL_DB_CONNECTION_URI_DEFAULT,
 			sql_db_host_value,
@@ -364,6 +416,13 @@ func TestGeneralEnvs(t *testing.T) {
 			app_name_value,
 			sql_db_ssl_mode_value)
 
+		nosqlDSN := fmt.Sprintf(NOSQL_DB_CONNECTION_URI_DEFAULT,
+			nosql_db_user_value,
+			nosql_db_password_value,
+			nosql_db_hosts_value,
+			nosql_db_name_value,
+			nosql_db_replicaset)
+
 		assert.Nil(t, Load())
 		assert.Equal(t, cloud_host_value, CLOUD_HOST)
 		assert.Equal(t, cloud_region_value, CLOUD_REGION)
@@ -373,6 +432,7 @@ func TestGeneralEnvs(t *testing.T) {
 		assert.Equal(t, cache_password_value, CACHE_PASSWORD)
 		assert.Equal(t, sql_db_name_value, SQL_DB_NAME)
 		assert.Equal(t, dbConnectionUri, SQL_DB_CONNECTION_URI)
+		assert.Equal(t, nosqlDSN, NOSQL_DB_CONNECTION_URI)
 	})
 }
 

@@ -27,6 +27,7 @@ const (
 	LOCALSTACK_ENVIRONMENT_PATH   string = DEVELOPMENT_ENVIRONMENT_PATH + "/localstack/"
 	GCP_EMULATOR_ENVIRONMENT_PATH string = DEVELOPMENT_ENVIRONMENT_PATH + "/gcp-emulator/"
 	WIREMOCK_ENVIRONMENT_PATH     string = DEVELOPMENT_ENVIRONMENT_PATH + "/wiremock/"
+	NOSQL_ENVIRONMENT_PATH        string = DEVELOPMENT_ENVIRONMENT_PATH + "/nosql/"
 )
 
 var m sync.Mutex
@@ -42,6 +43,11 @@ func InitializeCacheDBTest() {
 
 func InitializeSqlDBTest() {
 	UsePostgresContainer()
+	loadConfig()
+}
+
+func InitializeNoSqlDBTest() {
+	UseMongoDBContainer()
 	loadConfig()
 }
 
