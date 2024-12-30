@@ -3,9 +3,12 @@ package messaging
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/colibri-project-io/colibri-sdk-go/pkg/base/config"
+	"github.com/colibri-project-io/colibri-sdk-go/pkg/base/logging"
 	"github.com/colibri-project-io/colibri-sdk-go/pkg/base/test"
 	"github.com/stretchr/testify/assert"
 )
@@ -50,6 +53,69 @@ func TestMessaging_GCP(t *testing.T) {
 	Initialize()
 
 	executeMessagingTest(t)
+}
+
+func TestMessaging_Kafka(t *testing.T) {
+	os.Setenv(config.ENV_MESSAGING_BROKER_VENDOR, "kafka")
+	os.Setenv(config.ENV_KAFKA_BOOTSTRAP_SERVER, "localhost:9092")
+	os.Setenv(config.ENV_KAFKA_CLIENT_ID, "application-name")
+	os.Setenv(config.ENV_KAFKA_PRODUCER_OPTIONS, "acks=0,delivery.timeout.ms=0")
+	os.Setenv(config.ENV_KAFKA_CONSUMER_GROUP_ID, "colibri-sdk")
+	os.Setenv(config.ENV_KAFKA_CONSUMER_OPTIONS, "auto.offset.reset=earliest")
+
+	test.InitializeKafkaTest()
+
+	Initialize()
+
+	t.Run("Should return nil when process message with success", func(t *testing.T) {
+		chSuccessConsumer := make(chan string)
+		qc := queueConsumerTest{
+			fn: func(ctx context.Context, message *ProviderMessage) error {
+				chSuccessConsumer <- fmt.Sprintf("processing message: %v", message)
+				return nil
+			},
+			qName: testTopicName,
+		}
+
+		chSuccessProducer := make(chan string)
+		chError := make(chan string)
+		producer := NewKafkaProducer(
+			testTopicName,
+			"",
+			func() {
+				chSuccessProducer <- "processing message"
+			},
+			func() {
+				chError <- "processing message"
+			})
+
+		logging.Info("Producing messages")
+
+		model := userMessageTest{"User Name", "user@email.com"}
+		producer.Publish(context.Background(), "create", model)
+
+		timeout := time.After(2 * time.Second)
+		select {
+		case msgProcessing := <-chSuccessProducer:
+			assert.NotEmpty(t, msgProcessing)
+		case <-chError:
+			t.Fatal("Erro producing message")
+		case <-timeout:
+			t.Fatal("Test didn't finish after 2s (producer)")
+		}
+
+		logging.Info("Consuming messages")
+
+		NewConsumer(&qc)
+
+		timeout = time.After(2 * time.Second)
+		select {
+		case msgProcessing := <-chSuccessConsumer:
+			assert.NotEmpty(t, msgProcessing)
+		case <-timeout:
+			t.Fatal("Test didn't finish after 2s (consumer)")
+		}
+	})
 }
 
 func executeMessagingTest(t *testing.T) {

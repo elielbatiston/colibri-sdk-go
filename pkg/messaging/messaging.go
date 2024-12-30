@@ -17,7 +17,7 @@ const (
 )
 
 type messaging interface {
-	producer(ctx context.Context, p *Producer, msg *ProviderMessage) error
+	producer(ctx context.Context, p ProducerInterface, msg *ProviderMessage) error
 	consumer(ctx context.Context, c *consumer) (chan *ProviderMessage, error)
 }
 
@@ -37,13 +37,23 @@ func (o *messagingObserver) Close() {
 }
 
 func Initialize() {
-	switch config.CLOUD {
-	case config.CLOUD_AWS:
-		instance = newAwsMessaging()
-	case config.CLOUD_GCP, config.CLOUD_FIREBASE:
-		instance = newGcpMessaging()
+	switch config.MESSAGING_BROKER_VENDOR {
+	case config.CLOUD_MESSAGING_BROKER_VENDOR:
+		instance = newCloudMessagingBrokerInstance()
+	case config.KAFKA_MESSAGING_BROKER_VENDOR:
+		instance = newKafkaMessaging()
 	}
 
 	logging.Info("Message broker connected")
 	observer.Attach(&messagingObserver{})
+}
+
+func newCloudMessagingBrokerInstance() messaging {
+	switch config.CLOUD {
+	case config.CLOUD_AWS:
+		return newAwsMessaging()
+	case config.CLOUD_GCP, config.CLOUD_FIREBASE:
+		return newGcpMessaging()
+	}
+	return nil
 }

@@ -42,10 +42,10 @@ func newAwsMessaging() *awsMessaging {
 	return &m
 }
 
-func (m *awsMessaging) producer(ctx context.Context, p *Producer, msg *ProviderMessage) error {
+func (m *awsMessaging) producer(ctx context.Context, p ProducerInterface, msg *ProviderMessage) error {
 	_, err := m.snsService.PublishWithContext(ctx, &sns.PublishInput{
 		Message:  aws.String(msg.String()),
-		TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:us-east-1:000000000000:%s", p.topic)),
+		TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:us-east-1:000000000000:%s", p.GetTopic())),
 	})
 
 	return err

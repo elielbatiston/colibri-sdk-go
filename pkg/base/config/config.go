@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"golang.org/x/exp/slices"
@@ -22,31 +23,37 @@ const (
 	ENV_OTEL_EXPORTER_OTLP_ENDPOINT string = "OTEL_EXPORTER_OTLP_ENDPOINT"
 	ENV_OTEL_EXPORTER_OTLP_HEADERS  string = "OTEL_EXPORTER_OTLP_HEADERS"
 
-	ENV_PORT                   string = "PORT"
-	ENV_SQL_DB_MIGRATION       string = "SQL_DB_MIGRATION"
-	ENV_CLOUD_HOST             string = "CLOUD_HOST"
-	ENV_CLOUD_REGION           string = "CLOUD_REGION"
-	ENV_CLOUD_SECRET           string = "CLOUD_SECRET"
-	ENV_CLOUD_TOKEN            string = "CLOUD_TOKEN"
-	ENV_CLOUD_DISABLE_SSL      string = "CLOUD_DISABLE_SSL"
-	ENV_CACHE_URI              string = "CACHE_URI"
-	ENV_CACHE_PASSWORD         string = "CACHE_PASSWORD"
-	ENV_SQL_DB_NAME            string = "SQL_DB_NAME"
-	ENV_SQL_DB_HOST            string = "SQL_DB_HOST"
-	ENV_SQL_DB_PORT            string = "SQL_DB_PORT"
-	ENV_SQL_DB_USER            string = "SQL_DB_USER"
-	ENV_SQL_DB_PASSWORD        string = "SQL_DB_PASSWORD"
-	ENV_SQL_DB_SSL_MODE        string = "SQL_DB_SSL_MODE"
-	ENV_SQL_DB_MAX_OPEN_CONNS  string = "SQL_DB_MAX_OPEN_CONNS"
-	ENV_SQL_DB_MAX_IDLE_CONNS  string = "SQL_DB_MAX_IDLE_CONNS"
-	ENV_LOG_LEVEL              string = "LOG_LEVEL"
-	ENV_NOSQL_DB_HOSTS         string = "NOSQL_DB_HOSTS"
-	ENV_NOSQL_DB_USER          string = "NOSQL_DB_USER"
-	ENV_NOSQL_DB_PASSWORD      string = "NOSQL_DB_PASSWORD"
-	ENV_NOSQL_DB_NAME          string = "NOSQL_DB_NAME"
-	ENV_NOSQL_DB_REPLICASET    string = "NOSQL_DB_REPLICASET"
-	ENV_NOSQL_DB_MAX_POOL_SIZE string = "NOSQL_DB_MAX_POOL_SIZE"
-	ENV_NOSQL_DB_MIN_POOL_SIZE string = "NOSQL_DB_MIN_POOL_SIZE"
+	ENV_PORT                    string = "PORT"
+	ENV_SQL_DB_MIGRATION        string = "SQL_DB_MIGRATION"
+	ENV_CLOUD_HOST              string = "CLOUD_HOST"
+	ENV_CLOUD_REGION            string = "CLOUD_REGION"
+	ENV_CLOUD_SECRET            string = "CLOUD_SECRET"
+	ENV_CLOUD_TOKEN             string = "CLOUD_TOKEN"
+	ENV_CLOUD_DISABLE_SSL       string = "CLOUD_DISABLE_SSL"
+	ENV_CACHE_URI               string = "CACHE_URI"
+	ENV_CACHE_PASSWORD          string = "CACHE_PASSWORD"
+	ENV_SQL_DB_NAME             string = "SQL_DB_NAME"
+	ENV_SQL_DB_HOST             string = "SQL_DB_HOST"
+	ENV_SQL_DB_PORT             string = "SQL_DB_PORT"
+	ENV_SQL_DB_USER             string = "SQL_DB_USER"
+	ENV_SQL_DB_PASSWORD         string = "SQL_DB_PASSWORD"
+	ENV_SQL_DB_SSL_MODE         string = "SQL_DB_SSL_MODE"
+	ENV_SQL_DB_MAX_OPEN_CONNS   string = "SQL_DB_MAX_OPEN_CONNS"
+	ENV_SQL_DB_MAX_IDLE_CONNS   string = "SQL_DB_MAX_IDLE_CONNS"
+	ENV_LOG_LEVEL               string = "LOG_LEVEL"
+	ENV_NOSQL_DB_HOSTS          string = "NOSQL_DB_HOSTS"
+	ENV_NOSQL_DB_USER           string = "NOSQL_DB_USER"
+	ENV_NOSQL_DB_PASSWORD       string = "NOSQL_DB_PASSWORD"
+	ENV_NOSQL_DB_NAME           string = "NOSQL_DB_NAME"
+	ENV_NOSQL_DB_REPLICASET     string = "NOSQL_DB_REPLICASET"
+	ENV_NOSQL_DB_MAX_POOL_SIZE  string = "NOSQL_DB_MAX_POOL_SIZE"
+	ENV_NOSQL_DB_MIN_POOL_SIZE  string = "NOSQL_DB_MIN_POOL_SIZE"
+	ENV_MESSAGING_BROKER_VENDOR string = "MESSAGING_BROKER_VENDOR"
+	ENV_KAFKA_BOOTSTRAP_SERVER  string = "KAFKA_BOOTSTRAP_SERVER"
+	ENV_KAFKA_CLIENT_ID         string = "KAFKA_CLIENT_ID"
+	ENV_KAFKA_PRODUCER_OPTIONS  string = "KAFKA_PRODUCER_OPTIONS"
+	ENV_KAFKA_CONSUMER_GROUP_ID string = "KAFKA_CONSUMER_GROUP_ID"
+	ENV_KAFKA_CONSUMER_OPTIONS  string = "KAFKA_CONSUMER_OPTIONS"
 
 	// Environment values
 	ENVIRONMENT_PRODUCTION          string = "production"
@@ -59,6 +66,8 @@ const (
 	CLOUD_AZURE                     string = "azure"
 	CLOUD_GCP                       string = "gcp"
 	CLOUD_FIREBASE                  string = "firebase"
+	CLOUD_MESSAGING_BROKER_VENDOR   string = "cloud"
+	KAFKA_MESSAGING_BROKER_VENDOR   string = "kafka"
 	SQL_DB_CONNECTION_URI_DEFAULT   string = "host=%s port=%s user=%s password=%s dbname=%s application_name='%s' sslmode=%s"
 	NOSQL_DB_CONNECTION_URI_DEFAULT string = "mongodb://%s:%s@%s/%s?authSource=admin&replicaset=%s"
 	VERSION                                = "v0.0.1"
@@ -109,6 +118,10 @@ var (
 	NOSQL_DB_CONNECTION_URI = ""
 	NOSQL_DB_MAX_POOL_SIZE  = 10
 	NOSQL_DB_MIN_POOL_SIZE  = 3
+
+	MESSAGING_BROKER_VENDOR = ""
+	KAFKA_CONSUMER_OPTIONS  = make(map[string]string)
+	KAFKA_PRODUCER_OPTIONS  = make(map[string]string)
 )
 
 // Load loads and validates all environment variables. It's used in app initialization.
@@ -201,6 +214,14 @@ func Load() error {
 		NOSQL_DB_NAME,
 		os.Getenv(ENV_NOSQL_DB_REPLICASET))
 
+	MESSAGING_BROKER_VENDOR = os.Getenv(ENV_MESSAGING_BROKER_VENDOR)
+	if MESSAGING_BROKER_VENDOR == "" {
+		MESSAGING_BROKER_VENDOR = "cloud"
+	}
+
+	KAFKA_CONSUMER_OPTIONS = getKafkaOptions(ENV_KAFKA_CONSUMER_OPTIONS)
+	KAFKA_PRODUCER_OPTIONS = getKafkaOptions(ENV_KAFKA_PRODUCER_OPTIONS)
+
 	return nil
 }
 
@@ -273,4 +294,18 @@ func IsCloudEnvironment() bool {
 // IsLocalEnvironment returns a boolean if is development or test environment.
 func IsLocalEnvironment() bool {
 	return IsDevelopmentEnvironment() || IsTestEnvironment()
+}
+
+// getKafkaOptions returns kafka options.
+func getKafkaOptions(cfg string) map[string]string {
+	options := make(map[string]string)
+
+	optionsList := strings.Split(os.Getenv(cfg), ",")
+	for _, option := range optionsList {
+		values := strings.Split(option, "=")
+		if len(values) == 2 {
+			options[values[0]] = values[1]
+		}
+	}
+	return options
 }

@@ -84,6 +84,11 @@ func getGcpEmulatorBasePath(path ...string) string {
 	return path[0]
 }
 
+func InitializeKafkaTest() {
+	UseKafkaContainer()
+	loadConfig()
+}
+
 func loadConfig() {
 	_ = os.Setenv(config.ENV_ENVIRONMENT, config.ENVIRONMENT_TEST)
 	_ = os.Setenv(config.ENV_APP_NAME, "colibri-project-test")

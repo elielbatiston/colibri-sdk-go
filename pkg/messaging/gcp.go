@@ -22,8 +22,8 @@ func newGcpMessaging() *gcpMessaging {
 	return &gcpMessaging{client}
 }
 
-func (m *gcpMessaging) producer(ctx context.Context, p *Producer, msg *ProviderMessage) error {
-	topic := m.client.Topic(p.topic)
+func (m *gcpMessaging) producer(ctx context.Context, p ProducerInterface, msg *ProviderMessage) error {
+	topic := m.client.Topic(p.GetTopic())
 	result := topic.Publish(ctx, &pubsub.Message{Data: []byte(msg.String())})
 	_, err := result.Get(ctx)
 	return err

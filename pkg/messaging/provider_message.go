@@ -25,6 +25,13 @@ func (msg *ProviderMessage) String() string {
 	return string(message)
 }
 
+// Byte retrieves an object in bytes
+func (msg *ProviderMessage) Byte() []byte {
+	message, _ := json.Marshal(msg)
+
+	return message
+}
+
 // DecodeAndValidateMessage transform interface into ProviderMessage and validate the struct
 func (msg *ProviderMessage) DecodeAndValidateMessage(model interface{}) error {
 	if err := msg.DecodeMessage(model); err != nil {

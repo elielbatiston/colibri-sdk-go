@@ -9,32 +9,38 @@ import (
 )
 
 const (
-	invalid_value              = "XYZ"
-	app_name_value             = "TEST APP NAME"
-	app_type_value             = "service"
-	new_relic_license_value    = "123456-abcdef-7890-ghi"
-	cloud_value                = "aws"
-	cloud_host_value           = "http://my-cloud-host-fake.com"
-	cloud_region_value         = "test-region"
-	cloud_secret_value         = "test-secret"
-	cloud_token_value          = "test-token"
-	cloud_disable_ssl_value    = "true"
-	port_value                 = "8081"
-	cache_uri_value            = "my-cache-fake:6379"
-	cache_password_value       = "my-cache-password"
-	sql_db_name_value          = "my-db-name"
-	sql_db_host_value          = "my-db-host"
-	sql_db_port_value          = "1234"
-	sql_db_user_value          = "my-db-user"
-	sql_db_password_value      = "my-db-password"
-	sql_db_ssl_mode_value      = "disable"
-	wait_group_timeout         = 400
-	default_wait_group_timeout = 90
-	nosql_db_name_value        = "my-db-name"
-	nosql_db_hosts_value       = "localhost:27017"
-	nosql_db_user_value        = "my-db-user"
-	nosql_db_password_value    = "my-db-password"
-	nosql_db_replicaset        = "rs0"
+	invalid_value                   = "XYZ"
+	app_name_value                  = "TEST APP NAME"
+	app_type_value                  = "service"
+	new_relic_license_value         = "123456-abcdef-7890-ghi"
+	cloud_value                     = "aws"
+	cloud_host_value                = "http://my-cloud-host-fake.com"
+	cloud_region_value              = "test-region"
+	cloud_secret_value              = "test-secret"
+	cloud_token_value               = "test-token"
+	cloud_disable_ssl_value         = "true"
+	port_value                      = "8081"
+	cache_uri_value                 = "my-cache-fake:6379"
+	cache_password_value            = "my-cache-password"
+	sql_db_name_value               = "my-db-name"
+	sql_db_host_value               = "my-db-host"
+	sql_db_port_value               = "1234"
+	sql_db_user_value               = "my-db-user"
+	sql_db_password_value           = "my-db-password"
+	sql_db_ssl_mode_value           = "disable"
+	wait_group_timeout              = 400
+	default_wait_group_timeout      = 90
+	nosql_db_name_value             = "my-db-name"
+	nosql_db_hosts_value            = "localhost:27017"
+	nosql_db_user_value             = "my-db-user"
+	nosql_db_password_value         = "my-db-password"
+	nosql_db_replicaset             = "rs0"
+	default_messaging_broker_vendor = "cloud"
+	kafka_bootstrap_server          = "localhost:9020"
+	kafka_client_id                 = "my-app"
+	kafka_producer_options          = "acks=all,delivery.timeout.ms=0"
+	kafka_consumer_group_id         = "colibri-sdk"
+	kafka_consumer_options          = "auto.offset.reset=earliest"
 )
 
 func TestEnvironmentProfiles(t *testing.T) {
@@ -385,6 +391,61 @@ func TestCloudDisableSsl(t *testing.T) {
 	})
 }
 
+func TestMessagingBrokerVendor(t *testing.T) {
+	loadTestEnvs(t)
+
+	t.Run("Should return cloud as MESSAGING_BROKER_VENDOR when ENV_MESSAGING_BROKER_VENDOR was blank", func(t *testing.T) {
+		Load()
+		assert.Equal(t, "cloud", MESSAGING_BROKER_VENDOR)
+	})
+
+	t.Run("Should return cloud as MESSAGING_BROKER_VENDOR when ENV_MESSAGING_BROKER_VENDOR was cloud", func(t *testing.T) {
+		os.Setenv(ENV_MESSAGING_BROKER_VENDOR, default_messaging_broker_vendor)
+		Load()
+		assert.Equal(t, "cloud", MESSAGING_BROKER_VENDOR)
+	})
+
+	t.Run("Should return other as MESSAGING_BROKER_VENDOR when ENV_MESSAGING_BROKER_VENDOR was other", func(t *testing.T) {
+		os.Setenv(ENV_MESSAGING_BROKER_VENDOR, "other")
+		Load()
+		assert.Equal(t, "other", MESSAGING_BROKER_VENDOR)
+	})
+}
+
+func TestKafkaOptions(t *testing.T) {
+	loadTestEnvs(t)
+
+	t.Run("KAFKA_CONSUMER_OPTIONS and KAFKA_PRODUCER_OPTIONS should be blank", func(t *testing.T) {
+		Load()
+		assert.Equal(t, 0, len(KAFKA_CONSUMER_OPTIONS))
+		assert.Equal(t, 0, len(KAFKA_PRODUCER_OPTIONS))
+	})
+
+	t.Run("KAFKA_CONSUMER_OPTIONS should be filled in correctly", func(t *testing.T) {
+		os.Setenv(ENV_KAFKA_CONSUMER_OPTIONS, kafka_consumer_options)
+		Load()
+		assert.Equal(t, 1, len(KAFKA_CONSUMER_OPTIONS))
+
+		value, exists := KAFKA_CONSUMER_OPTIONS["auto.offset.reset"]
+		assert.True(t, exists)
+		assert.Equal(t, "earliest", value)
+	})
+
+	t.Run("KAFKA_PRODUCER_OPTIONS should be filled in correctly", func(t *testing.T) {
+		os.Setenv(ENV_KAFKA_PRODUCER_OPTIONS, kafka_producer_options)
+		Load()
+		assert.Equal(t, 2, len(KAFKA_PRODUCER_OPTIONS))
+
+		value, exists := KAFKA_PRODUCER_OPTIONS["acks"]
+		assert.True(t, exists)
+		assert.Equal(t, "all", value)
+
+		value, exists = KAFKA_PRODUCER_OPTIONS["delivery.timeout.ms"]
+		assert.True(t, exists)
+		assert.Equal(t, "0", value)
+	})
+}
+
 func TestGeneralEnvs(t *testing.T) {
 	loadTestEnvs(t)
 
@@ -406,6 +467,11 @@ func TestGeneralEnvs(t *testing.T) {
 		assert.NoError(t, os.Setenv(ENV_NOSQL_DB_USER, nosql_db_user_value))
 		assert.NoError(t, os.Setenv(ENV_NOSQL_DB_PASSWORD, nosql_db_password_value))
 		assert.NoError(t, os.Setenv(ENV_NOSQL_DB_REPLICASET, nosql_db_replicaset))
+		assert.NoError(t, os.Setenv(ENV_MESSAGING_BROKER_VENDOR, default_messaging_broker_vendor))
+		assert.NoError(t, os.Setenv(ENV_KAFKA_BOOTSTRAP_SERVER, kafka_bootstrap_server))
+		assert.NoError(t, os.Setenv(ENV_KAFKA_PRODUCER_OPTIONS, kafka_producer_options))
+		assert.NoError(t, os.Setenv(ENV_KAFKA_CONSUMER_GROUP_ID, kafka_consumer_group_id))
+		assert.NoError(t, os.Setenv(ENV_KAFKA_CONSUMER_OPTIONS, kafka_consumer_options))
 
 		dbConnectionUri := fmt.Sprintf(SQL_DB_CONNECTION_URI_DEFAULT,
 			sql_db_host_value,

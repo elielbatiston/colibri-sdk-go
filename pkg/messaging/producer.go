@@ -12,15 +12,20 @@ import (
 	"github.com/google/uuid"
 )
 
-type Producer struct {
-	topic string
+type ProducerInterface interface {
+	Publish(ctx context.Context, action string, message any) error
+	GetTopic() string
 }
 
-func NewProducer(topicName string) *Producer {
-	return &Producer{topicName}
+func NewProducer(topicName string) ProducerInterface {
+	return &CloudProducer{topicName}
 }
 
-func (p *Producer) Publish(ctx context.Context, action string, message any) error {
+func NewKafkaProducer(topicName string, key string, fnSuccess func(), fnError func()) ProducerInterface {
+	return &KafkaProducer{topicName, key, fnSuccess, fnError}
+}
+
+func publish(ctx context.Context, p ProducerInterface, action string, message any, txnFn func() interface{}) error {
 	if instance == nil {
 		return errors.New("messaging has not been initialized. add in main.go `messaging.Initialize()`")
 	}
@@ -28,15 +33,13 @@ func (p *Producer) Publish(ctx context.Context, action string, message any) erro
 
 	defer func() {
 		if r := recover(); r != nil {
-			logging.Error("panic recovering publish topic %s: \n%s", p.topic, string(debug.Stack()))
+			logging.Error("panic recovering publish topic %s: \n%s", p.GetTopic(), string(debug.Stack()))
 			monitoring.NoticeError(txn, r.(error))
 		}
 	}()
 
 	if txn != nil {
-		segment := monitoring.StartTransactionSegment(ctx, messaging_producer_transaction, map[string]string{
-			"topic": p.topic,
-		})
+		segment := txnFn()
 		defer monitoring.EndTransactionSegment(segment)
 	}
 
@@ -54,7 +57,7 @@ func (p *Producer) Publish(ctx context.Context, action string, message any) erro
 	}
 
 	if err := instance.producer(ctx, p, msg); err != nil {
-		logging.Error("Could not send message with id %s to topic %s. Error: %v", msg.Id, p.topic, err)
+		logging.Error("Could not send message with id %s to topic %s. Error: %v", msg.Id, p.GetTopic(), err)
 		monitoring.NoticeError(txn, err)
 		return err
 	}
