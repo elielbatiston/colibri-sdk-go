@@ -1,0 +1,132 @@
+{
+  "users": [
+    {
+      "name": "test",
+      "password_hash": "cddypjBraGwQp07kiDHdi+9U1VF7YUhkvlt0bI9boDq/PCxa",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "test",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "COLIBRI_PROJECT_USER_CREATE",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "COLIBRI_PROJECT_USER_CREATE_APP_CONSUMER.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "COLIBRI_PROJECT_FAIL_USER_CREATE",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "COLIBRI_PROJECT_FAIL_USER_CREATE_APP_CONSUMER.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "COLIBRI_PROJECT_USER_CREATE_APP_CONSUMER",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "COLIBRI_PROJECT_USER_CREATE_APP_CONSUMER.dlx",
+        "x-dead-letter-routing-key": "COLIBRI_PROJECT_USER_CREATE_APP_CONSUMER"
+      }
+    },
+    {
+      "name": "COLIBRI_PROJECT_USER_CREATE_APP_CONSUMER.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "COLIBRI_PROJECT_FAIL_USER_CREATE_APP_CONSUMER",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "COLIBRI_PROJECT_FAIL_USER_CREATE_APP_CONSUMER.dlx",
+        "x-dead-letter-routing-key": "COLIBRI_PROJECT_FAIL_USER_CREATE_APP_CONSUMER"
+      }
+    },
+    {
+      "name": "COLIBRI_PROJECT_FAIL_USER_CREATE_APP_CONSUMER.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "COLIBRI_PROJECT_USER_CREATE",
+      "vhost": "/",
+      "destination": "COLIBRI_PROJECT_USER_CREATE_APP_CONSUMER",
+      "destination_type": "queue",
+      "routing_key": "COLIBRI_PROJECT_USER_CREATE",
+      "arguments": {}
+    },
+    {
+      "source": "COLIBRI_PROJECT_USER_CREATE_APP_CONSUMER.dlx",
+      "vhost": "/",
+      "destination": "COLIBRI_PROJECT_USER_CREATE_APP_CONSUMER.dlq",
+      "destination_type": "queue",
+      "routing_key": "COLIBRI_PROJECT_USER_CREATE_APP_CONSUMER",
+      "arguments": {}
+    },
+    {
+      "source": "COLIBRI_PROJECT_FAIL_USER_CREATE",
+      "vhost": "/",
+      "destination": "COLIBRI_PROJECT_FAIL_USER_CREATE_APP_CONSUMER",
+      "destination_type": "queue",
+      "routing_key": "COLIBRI_PROJECT_FAIL_USER_CREATE",
+      "arguments": {}
+    },
+    {
+      "source": "COLIBRI_PROJECT_FAIL_USER_CREATE_APP_CONSUMER.dlx",
+      "vhost": "/",
+      "destination": "COLIBRI_PROJECT_FAIL_USER_CREATE_APP_CONSUMER.dlq",
+      "destination_type": "queue",
+      "routing_key": "COLIBRI_PROJECT_FAIL_USER_CREATE_APP_CONSUMER",
+      "arguments": {}
+    }
+  ]
+}

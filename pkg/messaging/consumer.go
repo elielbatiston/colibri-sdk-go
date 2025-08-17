@@ -3,8 +3,9 @@ package messaging
 import (
 	"context"
 	"fmt"
-	"github.com/colibriproject-dev/colibri-sdk-go/pkg/base/observer"
 	"sync"
+
+	"github.com/colibriproject-dev/colibri-sdk-go/pkg/base/observer"
 
 	"github.com/colibriproject-dev/colibri-sdk-go/pkg/base/logging"
 	"github.com/colibriproject-dev/colibri-sdk-go/pkg/base/monitoring"
@@ -12,10 +13,9 @@ import (
 
 type consumer struct {
 	sync.WaitGroup
-	queue     string
-	fn        func(ctx context.Context, message *ProviderMessage) error
-	done      chan any
-	topicName string
+	queue string
+	fn    func(ctx context.Context, message *ProviderMessage) error
+	done  chan any
 }
 
 type consumerObserver struct {
@@ -31,20 +31,11 @@ func NewConsumer(qc QueueConsumer) {
 		logging.Fatal(context.Background()).Msg(messagingNotInitialized)
 	}
 
-	topicName := ""
-	if qConfig, ok := qc.(QueueConsumerConfig); ok {
-		config := qConfig.Config()
-		if config != nil {
-			topicName = config.TopicName
-		}
-	}
-
 	c := &consumer{
 		WaitGroup: sync.WaitGroup{},
 		queue:     qc.QueueName(),
 		fn:        qc.Consume,
 		done:      make(chan any),
-		topicName: topicName,
 	}
 
 	observer.Attach(consumerObserver{c: c})

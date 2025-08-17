@@ -2,10 +2,6 @@ package messaging
 
 import "context"
 
-type QueueConfiguration struct {
-	TopicName string
-}
-
 // QueueConsumer defines an interface for consuming messages from a queue and managing the queue's name.
 type QueueConsumer interface {
 
@@ -14,12 +10,4 @@ type QueueConsumer interface {
 
 	// QueueName retrieves the name of the queue associated with the consumer.
 	QueueName() string
-}
-
-// QueueConsumerConfig combines queue consumption capabilities with access to queue configuration details.
-type QueueConsumerConfig interface {
-	QueueConsumer
-
-	// Config returns the queue configuration details by providing access to a QueueConfiguration object.
-	Config() *QueueConfiguration
 }

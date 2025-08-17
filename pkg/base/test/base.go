@@ -27,6 +27,7 @@ const (
 	REST_ENVIRONMENT_PATH         string = DEVELOPMENT_ENVIRONMENT_PATH + "/rest/"
 	LOCALSTACK_ENVIRONMENT_PATH   string = DEVELOPMENT_ENVIRONMENT_PATH + "/localstack/"
 	GCP_EMULATOR_ENVIRONMENT_PATH string = DEVELOPMENT_ENVIRONMENT_PATH + "/gcp-emulator/"
+	RABBITMQ_ENVIRONMENT_PATH     string = DEVELOPMENT_ENVIRONMENT_PATH + "/rabbitmq/"
 	WIREMOCK_ENVIRONMENT_PATH     string = DEVELOPMENT_ENVIRONMENT_PATH + "/wiremock/"
 )
 
@@ -80,10 +81,10 @@ func getGcpEmulatorBasePath(path ...string) string {
 	return path[0]
 }
 
-func InitializeRabbitmq() {
+func InitializeRabbitmq(path ...string) {
 	m.Lock()
 	ctx := context.WithValue(context.Background(), rabbitmqID, uuid.New().String())
-	_ = UseRabbitmqContainer(ctx)
+	_ = UseRabbitmqContainer(ctx, getRabbitmqBasePath(path...))
 	loadConfig()
 
 	_ = os.Setenv(config.ENV_COLIBRI_MESSAGING, config.MESSAGING_RABBITMQ)
@@ -91,6 +92,13 @@ func InitializeRabbitmq() {
 	_ = os.Setenv(config.ENV_CLOUD, config.CLOUD_NONE)
 	cloud.Initialize()
 	m.Unlock()
+}
+
+func getRabbitmqBasePath(path ...string) string {
+	if len(path) == 0 {
+		return MountAbsolutPath(RABBITMQ_ENVIRONMENT_PATH)
+	}
+	return path[0]
 }
 
 func loadConfig() {

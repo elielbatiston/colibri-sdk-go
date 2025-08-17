@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/colibriproject-dev/colibri-sdk-go/pkg/base/logging"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
 	"github.com/testcontainers/testcontainers-go"
@@ -13,7 +16,7 @@ import (
 )
 
 const (
-	rabbitmqDockerImage    = "rabbitmq:management-alpine"
+	rabbitmqDockerImage    = "rabbitmq:4-management-alpine"
 	rabbitmqAMQPPort       = "5672"
 	rabbitmqManagementPort = "15672"
 )
@@ -28,23 +31,35 @@ type RabbitmqContainer struct {
 	ctx                      context.Context
 }
 
-func UseRabbitmqContainer(ctx context.Context) *RabbitmqContainer {
+func UseRabbitmqContainer(ctx context.Context, configPath string) *RabbitmqContainer {
 	if rabbitmqContainerInstance == nil {
-		rabbitmqContainerInstance = newRabbitmqContainer()
+		rabbitmqContainerInstance = newRabbitmqContainer(configPath)
 		rabbitmqContainerInstance.ctx = ctx
 		rabbitmqContainerInstance.start()
 	}
 	return rabbitmqContainerInstance
 }
 
-func newRabbitmqContainer() *RabbitmqContainer {
+func newRabbitmqContainer(configPath string) *RabbitmqContainer {
+	// Get the absolute path to the definitions.json file
+	rabbitmqConfPath := filepath.Join(configPath, "rabbitmq.conf")
+	definitionsPath := filepath.Join(configPath, "definitions.json")
+
 	req := &testcontainers.ContainerRequest{
 		Image:        rabbitmqDockerImage,
 		ExposedPorts: []string{rabbitmqAMQPPort, rabbitmqManagementPort},
 		Name:         fmt.Sprintf("colibri-project-test-rabbitmq-%s", uuid.New().String()),
-		Env: map[string]string{
-			"RABBITMQ_DEFAULT_USER": "test",
-			"RABBITMQ_DEFAULT_PASS": "test",
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			hostConfig.Mounts = append(hostConfig.Mounts, mount.Mount{
+				Type:   mount.TypeBind,
+				Source: rabbitmqConfPath,
+				Target: "/etc/rabbitmq/rabbitmq.conf",
+			})
+			hostConfig.Mounts = append(hostConfig.Mounts, mount.Mount{
+				Type:   mount.TypeBind,
+				Source: definitionsPath,
+				Target: "/etc/rabbitmq/definitions.json",
+			})
 		},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort(rabbitmqAMQPPort),

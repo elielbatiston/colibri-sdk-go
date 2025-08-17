@@ -3,11 +3,12 @@ package messaging
 import (
 	"context"
 	"fmt"
-	"github.com/colibriproject-dev/colibri-sdk-go/pkg/base/config"
-	"github.com/colibriproject-dev/colibri-sdk-go/pkg/base/logging"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/colibriproject-dev/colibri-sdk-go/pkg/base/config"
+	"github.com/colibriproject-dev/colibri-sdk-go/pkg/base/logging"
 
 	"github.com/colibriproject-dev/colibri-sdk-go/pkg/base/test"
 	"github.com/stretchr/testify/assert"
@@ -26,9 +27,8 @@ const (
 )
 
 type queueConsumerTest struct {
-	fn     func(ctx context.Context, n *ProviderMessage) error
-	qName  string
-	config *QueueConfiguration
+	fn    func(ctx context.Context, n *ProviderMessage) error
+	qName string
 }
 
 func (q *queueConsumerTest) Consume(ctx context.Context, pm *ProviderMessage) error {
@@ -37,10 +37,6 @@ func (q *queueConsumerTest) Consume(ctx context.Context, pm *ProviderMessage) er
 
 func (q *queueConsumerTest) QueueName() string {
 	return q.qName
-}
-
-func (q *queueConsumerTest) Config() *QueueConfiguration {
-	return q.config
 }
 
 func TestMessaging(t *testing.T) {
@@ -90,8 +86,7 @@ func executeMessagingTest(t *testing.T) {
 				chSuccess <- successfulProcessMessage
 				return nil
 			},
-			qName:  testQueueName,
-			config: &QueueConfiguration{TopicName: testTopicName},
+			qName: testQueueName,
 		}
 
 		producer := NewProducer(testTopicName)
@@ -123,8 +118,7 @@ func executeMessagingTest(t *testing.T) {
 				chFail <- err.Error()
 				return err
 			},
-			qName:  testFailQueueName,
-			config: &QueueConfiguration{TopicName: testFailTopicName},
+			qName: testFailQueueName,
 		}
 
 		producer := NewProducer(testFailTopicName)
