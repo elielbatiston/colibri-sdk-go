@@ -26,6 +26,7 @@ jobs:
           go install go.uber.org/mock/mockgen@latest
           go mod download
           make test
+          make cover
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
