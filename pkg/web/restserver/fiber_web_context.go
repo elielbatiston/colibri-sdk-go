@@ -162,3 +162,7 @@ func (f *fiberWebContext) FormFile(key string) (multipart.File, *multipart.FileH
 func (f *fiberWebContext) FormValue(key string) string {
 	return f.ctx.FormValue(key)
 }
+
+func (f *fiberWebContext) ResponseHeader(key string) string {
+	return f.ctx.GetRespHeader(key)
+}

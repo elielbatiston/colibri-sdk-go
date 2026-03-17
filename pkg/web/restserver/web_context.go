@@ -60,4 +60,6 @@ type WebContext interface {
 	ErrorResponse(statusCode int, err error)
 	// EmptyResponse returns empty http json response body
 	EmptyResponse(statusCode int)
+	//ResponseHeader returns a slice of http response header for a key
+	ResponseHeader(key string) string
 }
