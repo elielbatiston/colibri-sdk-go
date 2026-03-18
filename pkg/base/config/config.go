@@ -41,6 +41,14 @@ const (
 	ENV_LOG_LEVEL             string = "LOG_LEVEL"
 	ENV_COLIBRI_MESSAGING     string = "COLIBRI_MESSAGING"
 
+	ENV_MONGODB_URI                      string = "MONGODB_URI"
+	ENV_MONGODB_MIN_POOL_SIZE            string = "MONGODB_MIN_POOL_SIZE"
+	ENV_MONGODB_MAX_POOL_SIZE            string = "MONGODB_MAX_POOL_SIZE"
+	ENV_MONGODB_MAX_CONN_IDLE_TIME       string = "MONGODB_MAX_CONN_IDLE_TIME_IN_MINUTES"
+	ENV_MONGODB_CONNECT_TIMEOUT          string = "MONGODB_CONNECT_TIMEOUT_IN_MILLESECONDS"
+	ENV_MONGODB_SERVER_SELECTION_TIMEOUT string = "MONGODB_SERVER_SELECTION_TIMEOUT_IN_MILLESECONDS"
+	ENV_MONGODB_READ_PREFERENCE          string = "MONGODB_READ_PREFERENCE"
+
 	// Environment values
 	ENVIRONMENT_PRODUCTION        string = "production"
 	ENVIRONMENT_SANDBOX           string = "sandbox"
@@ -58,6 +66,10 @@ const (
 	SQL_DB_CONNECTION_URI_DEFAULT string = "host=%s port=%s user=%s password=%s dbname=%s application_name='%s' sslmode=%s"
 	VERSION                              = "v0.1.9"
 
+	MONGODB_READPREF_PRIMARY             string = "primary"
+	MONGODB_READPREF_SECONDARY           string = "secondary"
+	MONGODB_READPREF_SECONDARY_PREFERRED string = "secondary_preferred"
+
 	// Errors messages
 	errorEnvironmentNotConfiguredMsg string = "environment is not configured. Set production, sandbox, development or test"
 	errorAppNameNotConfiguredMsg     string = "app name is not configured"
@@ -65,6 +77,7 @@ const (
 	errorCloudNotConfiguredMsg       string = "cloud is not configured. Set aws, azure, gcp, firebase or none"
 	errorParsingIntegerMsg           string = "could not parse %s, permitted int value, got %v: %w"
 	errorParsingBooleanMsg           string = "could not parse %s, permitted 'true' or 'false', got %v: %w"
+	errorMongoDBReadPrefInvalidMsg   string = "MONGODB_READPREF is invalid. Define it as nil, primary, secondary, secondary_preferred or undefined"
 )
 
 var (
@@ -97,6 +110,14 @@ var (
 
 	CACHE_URI      = ""
 	CACHE_PASSWORD = ""
+
+	MONGODB_CONNECTION_URI           = ""
+	MONGODB_MIN_POOL_SIZE            = 3
+	MONGODB_MAX_POOL_SIZE            = 10
+	MONGODB_MAX_CONN_IDLE_TIME       = 5
+	MONGODB_CONNECT_TIMEOUT          = 3000
+	MONGODB_SERVER_SELECTION_TIMEOUT = 3000
+	MONGODB_READPREF                 = ""
 )
 
 // Load loads and validates all environment variables. It's used in app initialization.
@@ -157,6 +178,33 @@ func Load() error {
 		COLIBRI_MESSAGING = messagingEnv
 	}
 
+	if err := convertIntEnv(&MONGODB_MAX_POOL_SIZE, ENV_MONGODB_MAX_POOL_SIZE); err != nil {
+		return err
+	}
+
+	if err := convertIntEnv(&MONGODB_MIN_POOL_SIZE, ENV_MONGODB_MIN_POOL_SIZE); err != nil {
+		return err
+	}
+
+	if err := convertIntEnv(&MONGODB_MAX_CONN_IDLE_TIME, ENV_MONGODB_MAX_CONN_IDLE_TIME); err != nil {
+		return err
+	}
+
+	if err := convertIntEnv(&MONGODB_CONNECT_TIMEOUT, ENV_MONGODB_CONNECT_TIMEOUT); err != nil {
+		return err
+	}
+
+	if err := convertIntEnv(&MONGODB_SERVER_SELECTION_TIMEOUT, ENV_MONGODB_SERVER_SELECTION_TIMEOUT); err != nil {
+		return err
+	}
+
+	if mongoDBReadPref := os.Getenv(ENV_MONGODB_READ_PREFERENCE); mongoDBReadPref != "" {
+		if !slices.Contains([]string{MONGODB_READPREF_PRIMARY, MONGODB_READPREF_SECONDARY, MONGODB_READPREF_SECONDARY_PREFERRED}, mongoDBReadPref) {
+			return errors.New(errorMongoDBReadPrefInvalidMsg)
+		}
+		MONGODB_READPREF = mongoDBReadPref
+	}
+
 	CLOUD_HOST = os.Getenv(ENV_CLOUD_HOST)
 	CLOUD_REGION = os.Getenv(ENV_CLOUD_REGION)
 	CLOUD_SECRET = os.Getenv(ENV_CLOUD_SECRET)
@@ -175,6 +223,8 @@ func Load() error {
 		SQL_DB_NAME,
 		APP_NAME,
 		os.Getenv(ENV_SQL_DB_SSL_MODE))
+
+	MONGODB_CONNECTION_URI = os.Getenv(ENV_MONGODB_URI)
 
 	return nil
 }
