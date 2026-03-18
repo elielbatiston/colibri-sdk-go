@@ -27,19 +27,17 @@ const (
 
 // mongoDBInstance is a pointer to mongo.Client
 var mongoDBInstance *mongo.Client
-var mongoDBCtxInstance context.Context
 
 // Initialize start connection with mongo database and execute migration.
 //
 // No parameters.
 // No return values.
-func Initialize(ctx context.Context) {
+func Initialize() {
 	if mongoDBInstance != nil {
 		logging.Info(context.Background()).Msg(dbAlreadyConnected)
 		return
 	}
 
-	mongoDBCtxInstance = ctx
 	mongoDB := NewMongoDBInstance(config.MONGODB_CONNECTION_URI)
 	mongoDBInstance = mongoDB
 }
@@ -62,19 +60,19 @@ func NewMongoDBInstance(dsn string) *mongo.Client {
 		SetServerSelectionTimeout(mongodbServerSelectionTimeout).
 		SetMonitor(otelmongo.NewMonitor())
 
-	mongoDB, err := mongo.Connect(mongoDBCtxInstance, clientOptions)
+	mongoDB, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
-		logging.Fatal(mongoDBCtxInstance).Msgf(dbConnectionError, err)
+		logging.Fatal(context.Background()).Msgf(dbConnectionError, err)
 	}
 
-	pingCtx, cancel := context.WithTimeout(mongoDBCtxInstance, mongodbServerSelectionTimeout)
+	pingCtx, cancel := context.WithTimeout(context.Background(), mongodbServerSelectionTimeout)
 	defer cancel()
 
 	if err = mongoDB.Ping(pingCtx, getReadPref()); err != nil {
-		logging.Fatal(mongoDBCtxInstance).Msgf(dbConnectionError, err)
+		logging.Fatal(context.Background()).Msgf(dbConnectionError, err)
 	}
 
-	logging.Info(mongoDBCtxInstance).Msgf(dbConnectionSuccess)
+	logging.Info(context.Background()).Msgf(dbConnectionSuccess)
 	observer.Attach(mongoDBObserver{mongoDB})
 
 	return mongoDB
