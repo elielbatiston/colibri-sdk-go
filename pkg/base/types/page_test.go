@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestNewPageRequest(t *testing.T) {
@@ -48,5 +49,68 @@ func TestNewPageRequest(t *testing.T) {
 		assert.Equal(t, s.Size, size)
 		assert.NotNil(t, s.Order)
 		assert.Equal(t, "field1 ASC, field2 DESC", s.GetOrder())
+	})
+}
+
+func TestGetMongoOrder(t *testing.T) {
+	const (
+		page uint16 = 1
+		size uint16 = 10
+	)
+
+	t.Run("Should return a new PageRequest with nil sort list", func(t *testing.T) {
+		var expectedOrder bson.D
+		s := NewPageRequest(page, size, nil)
+		assert.NotNil(t, s)
+		assert.Equal(t, s.Page, page)
+		assert.Equal(t, s.Size, size)
+		assert.Nil(t, s.Order)
+		assert.Equal(t, expectedOrder, s.GetMongoOrder())
+	})
+
+	t.Run("Should return a new PageRequest with empty sort list", func(t *testing.T) {
+		var expectedOrder bson.D
+		s := NewPageRequest(page, size, []Sort{})
+		assert.NotNil(t, s)
+		assert.Equal(t, s.Page, page)
+		assert.Equal(t, s.Size, size)
+		assert.NotNil(t, s.Order)
+		assert.Equal(t, expectedOrder, s.GetMongoOrder())
+	})
+
+	t.Run("Should return a new PageRequest with one populated sort list", func(t *testing.T) {
+		expectedOrder := bson.D{
+			bson.E{
+				Key:   "field1",
+				Value: 1,
+			},
+		}
+		sort := []Sort{NewSort(ASC, "field1")}
+		s := NewPageRequest(page, size, sort)
+		assert.NotNil(t, s)
+		assert.Equal(t, s.Page, page)
+		assert.Equal(t, s.Size, size)
+		assert.NotNil(t, s.Order)
+		assert.Equal(t, expectedOrder, s.GetMongoOrder())
+	})
+
+	t.Run("Should return a new PageRequest with many populated sort list", func(t *testing.T) {
+		expectedOrder := bson.D{
+			bson.E{
+				Key:   "field1",
+				Value: 1,
+			},
+			bson.E{
+				Key:   "field2",
+				Value: -1,
+			},
+		}
+		sort := []Sort{NewSort(ASC, "field1"), NewSort(DESC, "field2")}
+		s := NewPageRequest(page, size, sort)
+		assert.NotNil(t, s)
+		assert.Equal(t, s.Page, page)
+		assert.Equal(t, s.Size, size)
+		assert.NotNil(t, s.Order)
+		assert.Equal(t, expectedOrder, s.GetMongoOrder())
 	})
 }

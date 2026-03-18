@@ -3,6 +3,8 @@ package types
 import (
 	"fmt"
 	"strings"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // Page is the page response contract
@@ -32,4 +34,23 @@ func (p *PageRequest) GetOrder() string {
 	}
 
 	return strings.Join(orders, ", ")
+}
+
+// GetMongoOrder returns string contains concated order list
+func (p *PageRequest) GetMongoOrder() bson.D {
+	var sort bson.D
+
+	for _, order := range p.Order {
+		direction := -1
+		if order.Direction == ASC {
+			direction = 1
+		}
+
+		sort = append(sort, bson.E{
+			Key:   order.Field,
+			Value: direction,
+		})
+	}
+
+	return sort
 }
