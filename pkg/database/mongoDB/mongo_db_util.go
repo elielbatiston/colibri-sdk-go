@@ -1,6 +1,7 @@
 package mongoDB
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/colibriproject-dev/colibri-sdk-go/pkg/base/config"
@@ -20,7 +21,7 @@ type MongoDBModel interface {
 func getDataList[T any](cursor *mongo.Cursor) ([]T, error) {
 	list := make([]T, 0)
 	exist := false
-	for cursor.Next(mongoDBCtxInstance) {
+	for cursor.Next(context.Background()) {
 		exist = true
 		var model T
 		err := cursor.Decode(&model)
