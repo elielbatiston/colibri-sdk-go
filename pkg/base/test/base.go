@@ -29,6 +29,7 @@ const (
 	GCP_EMULATOR_ENVIRONMENT_PATH string = DEVELOPMENT_ENVIRONMENT_PATH + "/gcp-emulator/"
 	RABBITMQ_ENVIRONMENT_PATH     string = DEVELOPMENT_ENVIRONMENT_PATH + "/rabbitmq/"
 	WIREMOCK_ENVIRONMENT_PATH     string = DEVELOPMENT_ENVIRONMENT_PATH + "/wiremock/"
+	MONGODB_ENVIRONMENT_PATH      string = DEVELOPMENT_ENVIRONMENT_PATH + "/mongodb/"
 )
 
 var m sync.Mutex
@@ -54,6 +55,11 @@ func InitializeTestLocalstack(path ...string) {
 	loadConfig()
 	cloud.Initialize()
 	m.Unlock()
+}
+
+func InitializeMongoDBTest() {
+	UseMongoDBContainer(context.Background())
+	loadConfig()
 }
 
 func getLocalstackBasePath(path ...string) string {
