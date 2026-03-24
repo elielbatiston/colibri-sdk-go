@@ -51,7 +51,7 @@ func newAwsMessaging() *awsMessaging {
 	return &m
 }
 
-func (m *awsMessaging) producer(ctx context.Context, p *Producer, msg *ProviderMessage) error {
+func (m *awsMessaging) producer(ctx context.Context, p *Producer, msg *ProviderMessage, options publishOptions) error {
 	_, err := m.snsService.PublishWithContext(ctx, &sns.PublishInput{
 		Message: aws.String(msg.String()),
 		TopicArn: aws.String(fmt.Sprintf("arn:%s:sns:%s:%s:%s",
@@ -136,4 +136,8 @@ func (m *awsMessaging) getQueueUrl(ctx context.Context, queue string) *sqs.GetQu
 	}
 
 	return queueResult
+}
+
+func (m *awsMessaging) close() error {
+	return nil
 }

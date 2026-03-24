@@ -11,6 +11,27 @@ import (
 	"github.com/google/uuid"
 )
 
+type Metadata map[string]string
+
+type publishOptions struct {
+	metadata     Metadata
+	partitionKey string
+}
+
+type PublishOptions func(*publishOptions)
+
+func WithMetadata(md Metadata) PublishOptions {
+	return func(o *publishOptions) {
+		o.metadata = md
+	}
+}
+
+func WithPartitionKey(key string) PublishOptions {
+	return func(o *publishOptions) {
+		o.partitionKey = key
+	}
+}
+
 type Producer struct {
 	topic string
 }
@@ -19,7 +40,7 @@ func NewProducer(topicName string) *Producer {
 	return &Producer{topicName}
 }
 
-func (p *Producer) Publish(ctx context.Context, action string, message any) error {
+func (p *Producer) Publish(ctx context.Context, action string, message any, opts ...PublishOptions) error {
 	if instance == nil {
 		logging.Fatal(context.Background()).Msg(messagingNotInitialized)
 	}
@@ -43,7 +64,12 @@ func (p *Producer) Publish(ctx context.Context, action string, message any) erro
 		CorrelationID: correlationID.(string),
 	}
 
-	if err := instance.producer(ctx, p, msg); err != nil {
+	options := publishOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	if err := instance.producer(ctx, p, msg, options); err != nil {
 		logging.Error(ctx).Err(err).Msgf(couldNotSendMsg, msg.ID, p.topic)
 		monitoring.NoticeError(txn, err)
 		return err

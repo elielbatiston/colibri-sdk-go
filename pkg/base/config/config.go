@@ -41,6 +41,11 @@ const (
 	ENV_LOG_LEVEL             string = "LOG_LEVEL"
 	ENV_COLIBRI_MESSAGING     string = "COLIBRI_MESSAGING"
 
+	ENV_KAFKA_BOOTSTRAP_SERVERS          string = "KAFKA_BOOTSTRAP_SERVERS"
+	ENV_KAFKA_CLIENT_ID                  string = "KAFKA_CLIENT_ID"
+	ENV_KAFKA_CONSUMER_GROUP_ID          string = "KAFKA_CONSUMER_GROUP_ID"
+	ENV_KAFKA_CONSUMER_AUTO_OFFSET_RESET string = "KAFKA_CONSUMER_AUTO_OFFSET_RESET"
+
 	// Environment values
 	ENVIRONMENT_PRODUCTION        string = "production"
 	ENVIRONMENT_SANDBOX           string = "sandbox"
@@ -55,6 +60,7 @@ const (
 	CLOUD_NONE                    string = "none"
 	MESSAGING_CLOUD_DEFAULT       string = "CLOUD_DEFAULT"
 	MESSAGING_RABBITMQ            string = "RABBITMQ"
+	MESSAGING_KAFKA               string = "KAFKA"
 	SQL_DB_CONNECTION_URI_DEFAULT string = "host=%s port=%s user=%s password=%s dbname=%s application_name='%s' sslmode=%s"
 	VERSION                              = "v0.1.9"
 
@@ -151,8 +157,8 @@ func Load() error {
 	}
 
 	if messagingEnv := os.Getenv(ENV_COLIBRI_MESSAGING); messagingEnv != "" {
-		if messagingEnv != MESSAGING_CLOUD_DEFAULT && messagingEnv != MESSAGING_RABBITMQ {
-			return fmt.Errorf("invalid COLIBRI_MESSAGING value: %s. Allowed values: %s, %s", messagingEnv, MESSAGING_CLOUD_DEFAULT, MESSAGING_RABBITMQ)
+		if !slices.Contains([]string{MESSAGING_CLOUD_DEFAULT, MESSAGING_RABBITMQ, MESSAGING_KAFKA}, messagingEnv) {
+			return fmt.Errorf("invalid COLIBRI_MESSAGING value: %s. Allowed values: %s, %s, %s", messagingEnv, MESSAGING_CLOUD_DEFAULT, MESSAGING_RABBITMQ, MESSAGING_KAFKA)
 		}
 		COLIBRI_MESSAGING = messagingEnv
 	}

@@ -139,3 +139,84 @@ func executeMessagingTest(t *testing.T) {
 		}
 	})
 }
+
+func TestKafkaMessaging(t *testing.T) {
+
+	t.Run("TestMessaging_Kafka", func(t *testing.T) {
+		test.InitializeKafka()
+		Initialize()
+		executeKafkaMessagingTest(t)
+		t.Cleanup(func() {
+			instance = nil
+			_ = os.Unsetenv("COLIBRI_MESSAGING")
+			config.COLIBRI_MESSAGING = config.MESSAGING_CLOUD_DEFAULT
+			logging.Info(context.Background()).Msg("Cleaning up Kafka container")
+		})
+	})
+}
+
+func executeKafkaMessagingTest(t *testing.T) {
+
+	t.Run("Should return nil when process message with success", func(t *testing.T) {
+		chSuccess := make(chan string)
+
+		qc := queueConsumerTest{
+			fn: func(ctx context.Context, message *ProviderMessage) error {
+				successfulProcessMessage := fmt.Sprintf("processing message: %v", message)
+				logging.Info(ctx).Msgf("Received message: %v", message)
+				chSuccess <- successfulProcessMessage
+				return nil
+			},
+			qName: testTopicName,
+		}
+
+		producer := NewProducer(testTopicName)
+
+		NewConsumer(&qc)
+
+		model := userMessageTest{"User Name", "user@email.com"}
+		if err := producer.Publish(context.Background(), "create", model, WithPartitionKey("1")); err != nil {
+			logging.Error(context.Background()).Err(err).Msg(
+				fmt.Sprintf("Error publishing message to topic %s", testTopicName),
+			)
+			t.Fatal(err)
+		}
+
+		timeout := time.After(7 * time.Second)
+		select {
+		case msgProcessing := <-chSuccess:
+			assert.NotEmpty(t, msgProcessing)
+		case <-timeout:
+			t.Fatal("Test didn't finish after 7s")
+		}
+	})
+
+	t.Run("Should return error when process message with error and send message to dlq", func(t *testing.T) {
+		chFail := make(chan string)
+		qc := queueConsumerTest{
+			fn: func(ctx context.Context, message *ProviderMessage) error {
+				err := fmt.Errorf("email not valid")
+				chFail <- err.Error()
+				return err
+			},
+			qName: testFailTopicName,
+		}
+
+		producer := NewProducer(testFailTopicName)
+
+		NewConsumer(&qc)
+
+		model := userMessageTest{"User Name", "user@email.com"}
+		if err := producer.Publish(context.Background(), "create", model); err != nil {
+			t.Fatal(err)
+		}
+
+		timeout := time.After(7 * time.Second)
+		select {
+		case msgDLQ := <-chFail:
+			assert.Equal(t, "email not valid", msgDLQ)
+		case <-timeout:
+			t.Fatal("Test didn't finish after 7s")
+		}
+	})
+}

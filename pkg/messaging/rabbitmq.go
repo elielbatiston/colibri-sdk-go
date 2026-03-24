@@ -60,7 +60,7 @@ func newRabbitMQMessaging() *rabbitMQMessaging {
 	}
 }
 
-func (m *rabbitMQMessaging) producer(ctx context.Context, p *Producer, msg *ProviderMessage) error {
+func (m *rabbitMQMessaging) producer(ctx context.Context, p *Producer, msg *ProviderMessage, options publishOptions) error {
 	body := []byte(msg.String())
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -144,4 +144,8 @@ func (m *rabbitMQMessaging) handleUnmarshalError(ctx context.Context, c *consume
 	if ackErr := d.Ack(false); ackErr != nil {
 		logging.Error(ctx).Err(ackErr).Msgf("Could not ack message %s after DLQ", d.MessageId)
 	}
+}
+
+func (m *rabbitMQMessaging) close() error {
+	return nil
 }

@@ -26,11 +26,14 @@ const (
 	couldNotSendMsg              string = "could not send message with id %s to topic %s"
 	safelyCloseMsg               string = "waiting to safely close messaging module"
 	timeoutCloseMsg              string = "waiting timed out, forcing close the messaging module"
+	closingCloseMsg              string = "closing messaging module"
+	errorCloseMsg                string = "error when closing messaging module"
 )
 
 type messaging interface {
-	producer(ctx context.Context, p *Producer, msg *ProviderMessage) error
+	producer(ctx context.Context, p *Producer, msg *ProviderMessage, options publishOptions) error
 	consumer(ctx context.Context, c *consumer) (chan *ProviderMessage, error)
+	close() error
 }
 
 var instance messaging
@@ -47,7 +50,13 @@ func (o *messagingObserver) Close() {
 		logging.Warn(ctx).Msg(timeoutCloseMsg)
 	}
 
-	o.closed = true
+	logging.Info(ctx).Msg(closingCloseMsg)
+	if err := instance.close(); err != nil {
+		logging.
+			Error(ctx).
+			Err(err).
+			Msg(errorCloseMsg)
+	}
 }
 
 func Initialize() {
@@ -56,9 +65,12 @@ func Initialize() {
 		return
 	}
 
-	if config.COLIBRI_MESSAGING == config.MESSAGING_RABBITMQ {
+	switch config.COLIBRI_MESSAGING {
+	case config.MESSAGING_RABBITMQ:
 		instance = newRabbitMQMessaging()
-	} else {
+	case config.MESSAGING_KAFKA:
+		instance = newKafkaMessaging()
+	default:
 		switch config.CLOUD {
 		case config.CLOUD_AWS:
 			instance = newAwsMessaging()

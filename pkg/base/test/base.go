@@ -101,6 +101,14 @@ func getRabbitmqBasePath(path ...string) string {
 	return path[0]
 }
 
+func InitializeKafka() {
+	m.Lock()
+	UseKafkaContainer(context.Background())
+	loadConfig()
+	cloud.Initialize()
+	m.Unlock()
+}
+
 func loadConfig() {
 	_ = os.Setenv(config.ENV_ENVIRONMENT, config.ENVIRONMENT_TEST)
 	_ = os.Setenv(config.ENV_APP_NAME, "colibri-project-test")

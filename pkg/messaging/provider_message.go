@@ -39,6 +39,13 @@ func (msg *ProviderMessage) String() string {
 	return string(message)
 }
 
+// String convert struct into JSON string
+func (msg *ProviderMessage) Byte() []byte {
+	message, _ := json.Marshal(msg)
+
+	return message
+}
+
 // DecodeAndValidateMessage transform interface into ProviderMessage and validate the struct
 func (msg *ProviderMessage) DecodeAndValidateMessage(model any) error {
 	if err := msg.DecodeMessage(model); err != nil {

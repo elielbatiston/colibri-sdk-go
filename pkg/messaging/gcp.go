@@ -32,7 +32,7 @@ func newGcpMessaging() *gcpMessaging {
 	return &gcpMessaging{client}
 }
 
-func (m *gcpMessaging) producer(ctx context.Context, p *Producer, msg *ProviderMessage) error {
+func (m *gcpMessaging) producer(ctx context.Context, p *Producer, msg *ProviderMessage, options publishOptions) error {
 	topic := m.client.Topic(p.topic)
 	result := topic.Publish(ctx, &pubsub.Message{Data: []byte(msg.String())})
 	_, err := result.Get(ctx)
@@ -65,4 +65,8 @@ func (m *gcpMessaging) consumer(ctx context.Context, c *consumer) (chan *Provide
 	}()
 
 	return ch, nil
+}
+
+func (m *gcpMessaging) close() error {
+	return nil
 }
