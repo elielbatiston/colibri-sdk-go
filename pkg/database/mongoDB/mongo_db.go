@@ -26,7 +26,10 @@ const (
 )
 
 // mongoDBInstance is a pointer to mongo.Client
-var mongoDBInstance *mongo.Client
+var (
+	mongoDBInstance *mongo.Client
+	MONGODB_NAME    string = ""
+)
 
 // Initialize start connection with mongo database and execute migration.
 //
@@ -59,6 +62,8 @@ func NewMongoDBInstance(dsn string) *mongo.Client {
 		SetConnectTimeout(mongodbConnectionTimeout).
 		SetServerSelectionTimeout(mongodbServerSelectionTimeout).
 		SetMonitor(otelmongo.NewMonitor())
+
+	MONGODB_NAME = extractMongoDBNameFromURI(dsn)
 
 	mongoDB, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {

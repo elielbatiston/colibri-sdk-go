@@ -3,6 +3,7 @@ package mongoDB
 import (
 	"context"
 	"reflect"
+	"regexp"
 
 	"github.com/colibriproject-dev/colibri-sdk-go/pkg/base/config"
 	"go.mongodb.org/mongo-driver/bson"
@@ -45,7 +46,7 @@ func getDataList[T any](cursor *mongo.Cursor) ([]T, error) {
 // returns mongo.Collection
 func getMongoCollection(instance *mongo.Client, model MongoDBModel) *mongo.Collection {
 	collectionName := model.CollectionName()
-	return instance.Database(config.MONGODB_NAME).Collection(collectionName)
+	return instance.Database(MONGODB_NAME).Collection(collectionName)
 }
 
 // isStructEmpty return if object is an empty structure
@@ -150,4 +151,19 @@ func getReadPref() *readpref.ReadPref {
 	default:
 		return readpref.Primary()
 	}
+}
+
+func extractMongoDBNameFromURI(uri string) string {
+	if uri == "" {
+		return ""
+	}
+
+	re := regexp.MustCompile(`mongodb:\/\/[^\/]+\/([^?]+)`)
+	match := re.FindStringSubmatch(uri)
+
+	if len(match) > 1 {
+		return match[1]
+	}
+
+	return ""
 }

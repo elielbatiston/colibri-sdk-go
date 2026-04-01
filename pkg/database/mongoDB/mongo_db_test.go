@@ -41,5 +41,5 @@ func InitializeMongoDBTest(ctx context.Context) {
 		logging.Fatal(ctx).Err(err)
 	}
 
-	Initialize(ctx)
+	Initialize()
 }

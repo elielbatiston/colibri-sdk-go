@@ -139,7 +139,6 @@ func (c *MongoDBContainer) setDatabaseEnv(testDbPort nat.Port) {
 	)
 
 	c.setEnv(config.ENV_MONGODB_URI, dsn)
-	c.setEnv(config.ENV_MONGODB_NAME, testMongoDBName)
 }
 
 func (c *MongoDBContainer) setEnv(env string, value string) {

@@ -41,7 +41,6 @@ const (
 	ENV_LOG_LEVEL             string = "LOG_LEVEL"
 	ENV_COLIBRI_MESSAGING     string = "COLIBRI_MESSAGING"
 
-	ENV_MONGODB_NAME                     string = "MONGODB_NAME"
 	ENV_MONGODB_URI                      string = "MONGODB_URI"
 	ENV_MONGODB_MIN_POOL_SIZE            string = "MONGODB_MIN_POOL_SIZE"
 	ENV_MONGODB_MAX_POOL_SIZE            string = "MONGODB_MAX_POOL_SIZE"
@@ -118,7 +117,6 @@ var (
 	CACHE_URI      = ""
 	CACHE_PASSWORD = ""
 
-	MONGODB_NAME                     = ""
 	MONGODB_CONNECTION_URI           = ""
 	MONGODB_MIN_POOL_SIZE            = 3
 	MONGODB_MAX_POOL_SIZE            = 10
@@ -233,7 +231,6 @@ func Load() error {
 		os.Getenv(ENV_SQL_DB_SSL_MODE))
 
 	MONGODB_CONNECTION_URI = os.Getenv(ENV_MONGODB_URI)
-	MONGODB_NAME = os.Getenv(ENV_MONGODB_NAME)
 
 	return nil
 }
