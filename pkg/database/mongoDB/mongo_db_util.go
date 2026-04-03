@@ -122,7 +122,7 @@ func isStruct(val reflect.Value) bool {
 //
 // interface{}
 // return a bson.M containig a filter with the Ids of a []interface{} or an error
-func buildFilterFromModel(models []MongoDBModel) (bson.M, error) {
+func buildFilterFromModels(models []MongoDBModel) bson.M {
 	ids := make([]interface{}, len(models))
 
 	for i, model := range models {
@@ -132,7 +132,7 @@ func buildFilterFromModel(models []MongoDBModel) (bson.M, error) {
 	// Create a filter to delete
 	filter := bson.M{"_id": bson.M{"$in": ids}}
 
-	return filter, nil
+	return filter
 }
 
 // getReadPref return a readpref.ReadPref

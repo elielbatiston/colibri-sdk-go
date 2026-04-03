@@ -8,6 +8,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Command struct
@@ -43,8 +44,14 @@ func (c *Command[T]) InsertOneInInstance(instance *mongo.Client) error {
 		return err
 	}
 
-	var model T
-	_, err := getMongoCollection(mongoDBInstance, model).InsertOne(c.ctx, c.model)
+	var model MongoDBModel
+	var ok bool
+	if model, ok = c.model.(MongoDBModel); !ok {
+		return errors.New("the model is not a MongoDBModel")
+	}
+
+	opts := &options.InsertOneOptions{Comment: model}
+	_, err := getMongoCollection(mongoDBInstance, model).InsertOne(c.ctx, model, opts)
 	if err != nil {
 		return err
 	}
@@ -75,7 +82,41 @@ func (c *Command[T]) InsertManyInInstance(instance *mongo.Client) error {
 	}
 
 	var model T
-	_, err = getMongoCollection(mongoDBInstance, model).InsertMany(c.ctx, modelsSlice)
+	opts := &options.InsertManyOptions{Comment: model}
+	_, err = getMongoCollection(mongoDBInstance, model).InsertMany(c.ctx, modelsSlice, opts)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ReplaceOne update an existing document in the database
+//
+// No parameters.
+// Returns an Error
+func (c *Command[T]) ReplaceOne() error {
+	return c.ReplaceOneInInstance(mongoDBInstance)
+}
+
+// ReplaceOneInInstance updates a single document in the provided database instance.
+//
+// instance: The *mongo.Client instance to execute.
+// Returns an error.
+func (c *Command[T]) ReplaceOneInInstance(instance *mongo.Client) error {
+	if err := c.validate(instance, c.model); err != nil {
+		return err
+	}
+
+	var model MongoDBModel
+	var ok bool
+	if model, ok = c.model.(MongoDBModel); !ok {
+		return errors.New("the model is not a MongoDBModel")
+	}
+
+	filter := bson.M{"_id": model.GetID()}
+	opts := &options.ReplaceOptions{Comment: model}
+	_, err := getMongoCollection(mongoDBInstance, model).ReplaceOne(c.ctx, filter, model, opts)
 	if err != nil {
 		return err
 	}
@@ -100,8 +141,15 @@ func (c *Command[T]) DeleteOneInInstance(instance *mongo.Client) error {
 		return err
 	}
 
-	var model T
-	_, err := getMongoCollection(mongoDBInstance, model).DeleteOne(c.ctx, c.model)
+	var model MongoDBModel
+	var ok bool
+	if model, ok = c.model.(MongoDBModel); !ok {
+		return errors.New("the model is not a MongoDBModel")
+	}
+
+	filter := bson.M{"_id": model.GetID()}
+	opts := &options.DeleteOptions{Comment: model}
+	_, err := getMongoCollection(mongoDBInstance, model).DeleteOne(c.ctx, filter, opts)
 	if err != nil {
 		return err
 	}
@@ -131,13 +179,10 @@ func (c *Command[T]) DeleteManyInInstance(instance *mongo.Client) error {
 		return err
 	}
 
-	filter, err := buildFilterFromModel(models)
-	if err != nil {
-		return err
-	}
-
 	var model T
-	_, err = getMongoCollection(mongoDBInstance, model).DeleteMany(c.ctx, filter)
+	filter := buildFilterFromModels(models)
+	opts := &options.DeleteOptions{Comment: models}
+	_, err = getMongoCollection(mongoDBInstance, model).DeleteMany(c.ctx, filter, opts)
 	if err != nil {
 		return err
 	}
@@ -167,14 +212,18 @@ func (c *Command[T]) modelToSlice(models interface{}) ([]interface{}, error) {
 		return nil, fmt.Errorf("model is not a slice")
 	}
 
-	var docs []interface{}
+	var newModels []interface{}
 	for i := 0; i < v.Len(); i++ {
-		raw := v.Index(i).Interface()
-		value := raw.(MongoDBModel)
-		docs = append(docs, value)
+		model := v.Index(i).Interface()
+		value, ok := model.(MongoDBModel)
+		if !ok {
+			return nil, errors.New("the models are not a MongoDBModel")
+		}
+
+		newModels = append(newModels, value)
 	}
 
-	return docs, nil
+	return newModels, nil
 }
 
 func (c *Command[T]) toMongoDBModel() ([]MongoDBModel, error) {
@@ -186,7 +235,11 @@ func (c *Command[T]) toMongoDBModel() ([]MongoDBModel, error) {
 	}
 
 	for _, model := range modelsSlice {
-		value := model.(MongoDBModel)
+		value, ok := model.(MongoDBModel)
+		if value, ok = model.(MongoDBModel); !ok {
+			return nil, errors.New("the models are not a MongoDBModel")
+		}
+
 		models = append(models, value)
 	}
 
