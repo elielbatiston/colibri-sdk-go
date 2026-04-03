@@ -60,4 +60,6 @@ type WebContext interface {
 	ErrorResponse(statusCode int, err error)
 	// EmptyResponse returns empty http json response body
 	EmptyResponse(statusCode int)
+	// GetURI returns the full URI of the request
+	GetURI() string
 }
