@@ -7,6 +7,7 @@ import (
 	"github.com/colibriproject-dev/colibri-sdk-go/pkg/base/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // PageQuery struct
@@ -80,7 +81,7 @@ func (q *PageQuery[T]) pageTotal(instance *mongo.Client) (uint64, error) {
 // Returns a slice of type T and an error.
 func (q *PageQuery[T]) pageData(instance *mongo.Client) ([]T, error) {
 	var model T
-	cursor, err := getMongoCollection(instance, model).Find(q.ctx, q.filter)
+	cursor, err := getMongoCollection(instance, model).Find(q.ctx, q.filter, q.GetFindOptions())
 	if err != nil {
 		return nil, err
 	}
@@ -103,4 +104,15 @@ func (q *PageQuery[T]) validate(instance *mongo.Client) error {
 	}
 
 	return nil
+}
+
+func (q *PageQuery[T]) GetFindOptions() *options.FindOptions {
+	limit := int64(q.page.Size)
+	skip := int64((q.page.Page - 1) * q.page.Size)
+
+	return &options.FindOptions{
+		Limit: &limit,
+		Skip:  &skip,
+		Sort:  q.page.GetMongoOrder(),
+	}
 }

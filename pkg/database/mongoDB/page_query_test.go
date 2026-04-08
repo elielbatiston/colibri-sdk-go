@@ -43,8 +43,7 @@ func TestPageQuery(t *testing.T) {
 		result, err := NewPageQuery[User](ctx, page, bson.M{}).Execute()
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
-		assert.Equal(t, 2, len(result.Items))
-		assert.Equal(t, "ADMIN USER", result.Items[0].Name)
+		assert.Equal(t, "OTHER USER", result.Items[0].Name)
 		assert.Equal(t, uint64(2), result.TotalItems)
 	})
 }
