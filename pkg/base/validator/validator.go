@@ -24,6 +24,7 @@ func Initialize() {
 
 	registerCustomTypes()
 	registerCustomValidations()
+	registerCustomTagName()
 }
 
 // RegisterCustomValidation registers a custom validation function with the provided tag.
